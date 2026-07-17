@@ -1,22 +1,27 @@
 import {
   DEFAULT_DISCORD_INGESTION_SETTINGS,
   DEFAULT_FAILOVER_SETTINGS,
+  DEFAULT_GENERAL_API_SETTINGS,
   buildDiscordIngestionAuditDigest,
   type DiscordIngestionSettings,
   type DiscordIngestionAuditDigest,
   type FailoverSettings,
+  type GeneralApiSettings,
   buildDiscordIngestionPriorityLabel,
   buildEnginePriorityLabel,
   buildTransportLabel,
   normalizeDiscordIngestionSettings,
   normalizeFailoverSettings,
+  normalizeGeneralApiSettings,
 } from "@sentinel-nexus/contracts";
 import { create } from "zustand";
 import {
   loadDiscordIngestionSettings,
   loadFailoverSettings,
+  loadGeneralApiSettings,
   saveDiscordIngestionSettings,
   saveFailoverSettings,
+  saveGeneralApiSettings,
   type SecureSettingsStorage,
 } from "./secureSettingsPersistence";
 import type { DiscordWebViewHealthSnapshot } from "./discordWebViewState";
@@ -25,6 +30,7 @@ import type { PhoneEngineRuntimeSnapshot } from "./phoneEngineRuntimeState";
 export interface MobileSettingsSnapshot {
   failoverSettings: FailoverSettings;
   discordIngestionSettings: DiscordIngestionSettings;
+  generalApiSettings: GeneralApiSettings;
 }
 
 export interface SettingsSummary {
@@ -38,6 +44,7 @@ export function getDefaultMobileSettingsSnapshot(): MobileSettingsSnapshot {
   return {
     failoverSettings: DEFAULT_FAILOVER_SETTINGS,
     discordIngestionSettings: DEFAULT_DISCORD_INGESTION_SETTINGS,
+    generalApiSettings: DEFAULT_GENERAL_API_SETTINGS,
   };
 }
 
@@ -107,10 +114,13 @@ interface SettingsState {
   snapshot: MobileSettingsSnapshot;
   updateFailoverSettings: (patch: Partial<FailoverSettings>) => void;
   updateDiscordIngestionSettings: (patch: Partial<DiscordIngestionSettings>) => void;
+  updateGeneralApiSettings: (patch: Partial<GeneralApiSettings>) => void;
   hydrateFailoverSettings: (storage: SecureSettingsStorage) => Promise<void>;
   hydrateDiscordIngestionSettings: (storage: SecureSettingsStorage) => Promise<void>;
   persistFailoverSettings: (storage: SecureSettingsStorage) => Promise<void>;
   persistDiscordIngestionSettings: (storage: SecureSettingsStorage) => Promise<void>;
+  hydrateGeneralApiSettings: (storage: SecureSettingsStorage) => Promise<void>;
+  persistGeneralApiSettings: (storage: SecureSettingsStorage) => Promise<void>;
 }
 
 export const useSettingsState = create<SettingsState>((set, get) => ({
@@ -130,6 +140,13 @@ export const useSettingsState = create<SettingsState>((set, get) => ({
           state.snapshot.discordIngestionSettings,
           patch,
         ),
+      },
+    })),
+  updateGeneralApiSettings: (patch) =>
+    set((state) => ({
+      snapshot: {
+        ...state.snapshot,
+        generalApiSettings: normalizeGeneralApiSettings({ ...state.snapshot.generalApiSettings, ...patch }),
       },
     })),
   hydrateFailoverSettings: async (storage) => {
@@ -161,5 +178,12 @@ export const useSettingsState = create<SettingsState>((set, get) => ({
   },
   persistDiscordIngestionSettings: async (storage) => {
     await saveDiscordIngestionSettings(storage, get().snapshot.discordIngestionSettings);
+  },
+  hydrateGeneralApiSettings: async (storage) => {
+    const settings = await loadGeneralApiSettings(storage);
+    if (settings) set({ snapshot: { ...get().snapshot, generalApiSettings: settings } });
+  },
+  persistGeneralApiSettings: async (storage) => {
+    await saveGeneralApiSettings(storage, get().snapshot.generalApiSettings);
   },
 }));

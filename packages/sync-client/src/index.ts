@@ -1,5 +1,6 @@
 export * from "./eventLog";
 export * from "./remoteEngineClient";
+export * from "./generalApiClient";
 export {
   fetchRemoteAlertEvidence,
   normalizeRemoteEvidenceBaseUrl,

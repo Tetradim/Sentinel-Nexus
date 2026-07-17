@@ -1,8 +1,10 @@
 import {
   normalizeDiscordIngestionSettings,
   normalizeFailoverSettings,
+  normalizeGeneralApiSettings,
   type DiscordIngestionSettings,
   type FailoverSettings,
+  type GeneralApiSettings,
 } from "@sentinel-nexus/contracts";
 import type { RemoteConnectionDraft } from "./remoteEngineState";
 import {
@@ -14,6 +16,7 @@ export const REMOTE_CONNECTION_STORAGE_KEY = "sentinel-nexus.remote-connection.v
 export const FAILOVER_SETTINGS_STORAGE_KEY = "sentinel-nexus.failover-settings.v1";
 export const DISCORD_INGESTION_SETTINGS_STORAGE_KEY = "sentinel-nexus.discord-ingestion-settings.v1";
 export const SETUP_AUTOMATION_STORAGE_KEY = "sentinel-nexus.setup-automation.v1";
+export const GENERAL_API_SETTINGS_STORAGE_KEY = "sentinel-nexus.general-api-settings.v1";
 
 export interface SecureSettingsStorage {
   getItemAsync: (key: string) => Promise<string | null>;
@@ -69,6 +72,10 @@ export async function saveDiscordIngestionSettings(
     DISCORD_INGESTION_SETTINGS_STORAGE_KEY,
     JSON.stringify(normalizeDiscordIngestionSettings(settings)),
   );
+}
+
+export async function saveGeneralApiSettings(storage: SecureSettingsStorage, settings: GeneralApiSettings): Promise<void> {
+  await storage.setItemAsync(GENERAL_API_SETTINGS_STORAGE_KEY, JSON.stringify(normalizeGeneralApiSettings(settings)));
 }
 
 export async function saveSetupAutomationEvidence(
@@ -162,6 +169,11 @@ export async function loadDiscordIngestionSettings(
   }
 
   return normalizeDiscordIngestionSettings(payload);
+}
+
+export async function loadGeneralApiSettings(storage: SecureSettingsStorage): Promise<GeneralApiSettings | null> {
+  const payload = await readJsonRecord(storage, GENERAL_API_SETTINGS_STORAGE_KEY);
+  return payload ? normalizeGeneralApiSettings(payload) : null;
 }
 
 async function readJsonRecord(

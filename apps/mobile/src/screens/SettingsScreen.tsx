@@ -1,5 +1,7 @@
 import type { DiscordIngestionRoute, EnginePriority, TransportPreference } from "@sentinel-nexus/contracts";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { GeneralApiClient } from "@sentinel-nexus/sync-client";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ScreenFrame } from "@/components/ScreenFrame";
 import { SegmentedChoice } from "@/components/SegmentedChoice";
 import { SettingRow } from "@/components/SettingRow";
@@ -54,6 +56,10 @@ export function SettingsScreen() {
   const discordIngestionSettings = useSettingsState((state) => state.snapshot.discordIngestionSettings);
   const updateFailoverSettings = useSettingsState((state) => state.updateFailoverSettings);
   const updateDiscordIngestionSettings = useSettingsState((state) => state.updateDiscordIngestionSettings);
+  const generalApiSettings = useSettingsState((state) => state.snapshot.generalApiSettings);
+  const updateGeneralApiSettings = useSettingsState((state) => state.updateGeneralApiSettings);
+  const [generalApiStatus, setGeneralApiStatus] = useState("Not connected.");
+  const [generalApiBusy, setGeneralApiBusy] = useState(false);
   const phoneRuntime = usePhoneEngineRuntimeState((state) => state.snapshot);
   const webView = useDiscordWebViewHealthState((state) => state.snapshot);
   const summary = buildSettingsSummary(failoverSettings, discordIngestionSettings);
@@ -62,6 +68,31 @@ export function SettingsScreen() {
     phoneRuntime,
     webView,
   );
+
+  const runGeneralApiAction = async (action: "test" | "register") => {
+    setGeneralApiBusy(true);
+    try {
+      const client = new GeneralApiClient(generalApiSettings);
+      if (action === "test") {
+        const result = await client.test();
+        setGeneralApiStatus(`Connected to ${String(result.contract)}. Participant authentication: ${result.participantAuthenticated ? "yes" : "no"}.`);
+      } else {
+        const result = await client.register() as Record<string, unknown>;
+        const participant = result.participant as Record<string, unknown> | undefined;
+        const token = typeof result.api_token === "string" ? result.api_token : "";
+        updateGeneralApiSettings({
+          enabled: true,
+          participantId: typeof participant?.participant_id === "string" ? participant.participant_id : generalApiSettings.participantId,
+          participantToken: token,
+        });
+        setGeneralApiStatus(token ? "Sentinel Nexus registered. Participant token saved securely." : "Archive did not return a participant token.");
+      }
+    } catch (error) {
+      setGeneralApiStatus(`General API ${action} failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setGeneralApiBusy(false);
+    }
+  };
 
   return (
     <ScreenFrame title="Settings" eyebrow="Sentinel Nexus">
@@ -210,6 +241,79 @@ export function SettingsScreen() {
           style={styles.input}
         />
       </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>General API</Text>
+        <Text style={styles.routeAuditText}>
+          Archive replays and brokers. Sentinel Nexus observes the shared run and may publish risk-control evidence; it does not invent trades.
+        </Text>
+        <SettingRow
+          label="Archive connection"
+          description="Connect this Nexus instance to an Archive multi-bot replay run."
+          value={generalApiSettings.enabled}
+          onValueChange={(enabled) => updateGeneralApiSettings({ enabled })}
+        />
+        <Text style={styles.fieldLabel}>Archive base URL</Text>
+        <TextInput
+          value={generalApiSettings.baseUrl}
+          onChangeText={(baseUrl) => updateGeneralApiSettings({ baseUrl })}
+          placeholder="http://127.0.0.1:9200/api/general"
+          placeholderTextColor="#94a3b8"
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.input}
+        />
+        <Text style={styles.fieldLabel}>Replay run ID</Text>
+        <TextInput
+          value={generalApiSettings.runId}
+          onChangeText={(runId) => updateGeneralApiSettings({ runId })}
+          placeholder="Run ID from Sentinel Archive"
+          placeholderTextColor="#94a3b8"
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.input}
+        />
+        <Text style={styles.fieldLabel}>Participant ID</Text>
+        <TextInput
+          value={generalApiSettings.participantId}
+          onChangeText={(participantId) => updateGeneralApiSettings({ participantId })}
+          placeholder="sentinel-nexus"
+          placeholderTextColor="#94a3b8"
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.input}
+        />
+        <Text style={styles.fieldLabel}>Observed symbols</Text>
+        <TextInput
+          value={generalApiSettings.subscribedSymbols.join(", ")}
+          onChangeText={(value) => updateGeneralApiSettings({ subscribedSymbols: value.split(",").map((symbol) => symbol.trim()).filter(Boolean) })}
+          placeholder="SPY, TSLA, MES"
+          placeholderTextColor="#94a3b8"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          style={styles.input}
+        />
+        <Text style={styles.fieldLabel}>Participant token</Text>
+        <TextInput
+          value={generalApiSettings.participantToken}
+          onChangeText={(participantToken) => updateGeneralApiSettings({ participantToken })}
+          placeholder="Saved securely after registration"
+          placeholderTextColor="#94a3b8"
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry
+          style={styles.input}
+        />
+        <View style={styles.actionRow}>
+          <Pressable disabled={generalApiBusy} style={[styles.button, generalApiBusy ? styles.buttonDisabled : null]} onPress={() => void runGeneralApiAction("test")} accessibilityRole="button">
+            <Text style={styles.buttonText}>Test</Text>
+          </Pressable>
+          <Pressable disabled={generalApiBusy || !generalApiSettings.runId} style={[styles.button, generalApiBusy || !generalApiSettings.runId ? styles.buttonDisabled : null]} onPress={() => void runGeneralApiAction("register")} accessibilityRole="button">
+            <Text style={styles.buttonText}>Register</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.routeAuditText}>{generalApiStatus}</Text>
+      </View>
     </ScreenFrame>
   );
 }
@@ -273,4 +377,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 12,
   },
+  actionRow: { flexDirection: "row", gap: 10 },
+  button: { alignItems: "center", backgroundColor: "#166534", borderRadius: 8, flex: 1, justifyContent: "center", minHeight: 48, paddingHorizontal: 12 },
+  buttonDisabled: { opacity: 0.55 },
+  buttonText: { color: "#ffffff", fontSize: 14, fontWeight: "900" },
 });

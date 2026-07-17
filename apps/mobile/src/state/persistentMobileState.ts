@@ -14,6 +14,7 @@ export async function hydratePersistentMobileState(
     remoteEngineStore.getState().hydrateConnection(storage),
     useSettingsState.getState().hydrateFailoverSettings(storage),
     useSettingsState.getState().hydrateDiscordIngestionSettings(storage),
+    useSettingsState.getState().hydrateGeneralApiSettings(storage),
   ]);
   const setupEvidence = await loadSetupAutomationEvidence(storage);
   if (setupEvidence) {
@@ -28,6 +29,7 @@ export async function persistPersistentMobileState(
     remoteEngineStore.getState().persistConnection(storage),
     useSettingsState.getState().persistFailoverSettings(storage),
     useSettingsState.getState().persistDiscordIngestionSettings(storage),
+    useSettingsState.getState().persistGeneralApiSettings(storage),
     saveSetupAutomationEvidence(storage, setupAutomationStore.getState().snapshot.windows),
   ]);
 }
@@ -49,6 +51,9 @@ export function installPersistentMobileState(
     }
     if (state.snapshot.discordIngestionSettings !== previousState.snapshot.discordIngestionSettings) {
       void state.persistDiscordIngestionSettings(storage).catch(() => undefined);
+    }
+    if (state.snapshot.generalApiSettings !== previousState.snapshot.generalApiSettings) {
+      void state.persistGeneralApiSettings(storage).catch(() => undefined);
     }
   });
   const unsubscribeSetup = setupAutomationStore.subscribe((state, previousState) => {
