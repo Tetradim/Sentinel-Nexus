@@ -219,7 +219,7 @@ export function buildReconciliationAuditDigest(row: ReconciliationRow): Reconcil
     orderId: row.orderId,
     positionId: row.positionId,
     positionStatus: row.positionStatus,
-    modeLabel: row.simulated ? "paper/simulated" : "real",
+    modeLabel: row.simulated ? "unresolved local row" : "broker-routed",
     lifecycleGateLabel: lifecycle.gateLabel,
     lifecycleReadyLabel: lifecycle.readyCountLabel,
     lifecycleBlockingLabel: lifecycle.blockingCountLabel,

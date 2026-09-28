@@ -982,10 +982,10 @@ function formatPolicyAllowlistLabel(
 
 function formatSourceExecutionModeLabel(paperOnly: boolean, requireManualConfirm: boolean): string {
   if (paperOnly && requireManualConfirm) {
-    return "Paper-only source; manual confirmation required";
+    return "Broker execution blocked; manual confirmation required";
   }
   if (paperOnly) {
-    return "Paper-only source";
+    return "Broker execution blocked";
   }
   if (requireManualConfirm) {
     return "Manual confirmation required";

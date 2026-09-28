@@ -76,7 +76,7 @@ export function PositionsScreen() {
 
       <View style={styles.tileRow}>
         <MetricTile label="Rows" value={summary.rowCountLabel} detail={summary.unresolvedLabel} />
-        <MetricTile label="Paper" value={summary.simulatedLabel} detail="Simulated unresolved rows do not block live readiness" />
+        <MetricTile label="Unresolved" value={summary.simulatedLabel} detail="Local unresolved rows require broker reconciliation" />
       </View>
 
       <View style={styles.panel}>
@@ -137,7 +137,7 @@ export function PositionsScreen() {
               <Text style={styles.detail}>Trade: {row.tradeId || "none"} - {row.tradeStatus || "unknown"}</Text>
               <Text style={styles.detail}>Order: {row.orderId || "none"}</Text>
               <Text style={styles.detail}>Position: {row.positionId || "none"} - {row.positionStatus || "unknown"}</Text>
-              <Text style={styles.detail}>Mode: {row.simulated ? "paper/simulated" : "real"}</Text>
+              <Text style={styles.detail}>Mode: {row.simulated ? "unresolved local row" : "broker-routed"}</Text>
               <Text style={styles.auditText}>
                 Digest alert {digest.alertId || "missing"} - trade {digest.tradeId || "missing"} - lifecycle{" "}
                 {digest.lifecycleGateLabel}

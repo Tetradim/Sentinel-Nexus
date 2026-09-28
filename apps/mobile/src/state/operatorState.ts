@@ -96,7 +96,7 @@ export function buildCockpitSummary(
     snapshot.readiness === "live_ready"
       ? "Live gates satisfied"
       : snapshot.readiness === "paper_ready"
-        ? "Paper ready"
+        ? "Broker route ready"
         : snapshot.readiness === "unclear"
           ? "Readiness unclear"
           : "Not ready";
